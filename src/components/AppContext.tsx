@@ -100,6 +100,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const selectMember = (member: Member) => {
     localStorage.setItem('gyemoim_member_id', member.id);
     setCurrentMember(member);
+    if (member.role === 'ADMIN') {
+      localStorage.setItem('gyemoim_is_admin', 'true');
+      setIsAdmin(true);
+    }
   };
 
   const logoutMember = () => {
