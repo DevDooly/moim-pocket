@@ -193,27 +193,27 @@ export default function SchedulePage() {
             <div className="text-sky-600">토</div>
           </div>
 
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2">
             {calendarCells.map((day, idx) => {
               if (!day) {
-                return <div key={`empty-${idx}`} className="h-16 rounded-xl bg-slate-50/40" />;
+                return <div key={`empty-${idx}`} className="h-16 sm:h-24 lg:h-28 rounded-xl bg-slate-50/40" />;
               }
               const dayEvents = getEventsOnDay(day);
               return (
                 <div
                   key={day}
-                  className={`h-16 rounded-xl border p-1 flex flex-col justify-between text-xs ${
+                  className={`h-16 sm:h-24 lg:h-28 rounded-xl border p-1.5 sm:p-2 flex flex-col justify-between text-xs ${
                     dayEvents.length > 0
                       ? 'border-amber-300 bg-amber-50/60'
                       : 'border-slate-100 bg-white'
                   }`}
                 >
-                  <span className="font-bold text-slate-700 text-[11px]">{day}</span>
-                  <div className="space-y-0.5 overflow-hidden">
+                  <span className="font-bold text-slate-700 text-[11px] sm:text-xs">{day}</span>
+                  <div className="space-y-1 overflow-hidden">
                     {dayEvents.map((ev) => (
                       <div
                         key={ev.id}
-                        className="px-1 py-0.5 rounded bg-slate-900 text-[#FEE500] text-[9px] font-bold truncate"
+                        className="px-1.5 py-0.5 rounded bg-slate-900 text-[#FEE500] text-[9px] sm:text-[11px] font-bold truncate"
                         title={ev.title}
                       >
                         {ev.title}
@@ -228,7 +228,7 @@ export default function SchedulePage() {
       )}
 
       {/* 일정 상세 카드 리스트 */}
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
         {events.map((ev) => {
           const rsvps = ev.rsvps || [];
           const attendList = rsvps.filter((r: any) => r.status === 'ATTEND');

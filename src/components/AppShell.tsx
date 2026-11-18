@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Settings,
   X,
+  Vote,
 } from 'lucide-react';
 import { useApp } from './AppContext';
 
@@ -136,8 +137,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!currentMember) {
     return (
       <div className="min-h-screen flex flex-col justify-center items-center bg-slate-100 px-4 py-10">
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
-          <div className="bg-slate-900 px-6 py-7 text-white text-center">
+        <div className="w-full max-w-lg bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
+          <div className="bg-slate-900 px-6 py-8 text-white text-center">
             <div className="mx-auto w-12 h-12 rounded-2xl bg-[#FEE500] text-slate-900 flex items-center justify-center font-extrabold text-xl mb-3">
               👋
             </div>
@@ -147,13 +148,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </p>
           </div>
 
-          <div className="p-6 space-y-3">
-            <div className="grid grid-cols-2 gap-2.5">
+          <div className="p-6 space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
               {activeMembers.map((member) => (
                 <button
                   key={member.id}
                   onClick={() => selectMember(member)}
-                  className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 hover:border-slate-900 hover:bg-amber-50/50 transition text-left group"
+                  className="flex items-center justify-between p-4 rounded-2xl border border-slate-200 hover:border-slate-900 hover:bg-amber-50/50 transition text-left group"
                 >
                   <div>
                     <div className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
@@ -164,7 +165,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-400 mt-0.5">터치하여 시작</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">클릭하여 시작</p>
                   </div>
                   <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-900 transition" />
                 </button>
@@ -198,7 +199,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const navItems = [
+  // 모바일 하단 5탭 메뉴
+  const mobileNavItems = [
     {
       href: '/',
       label: '홈',
@@ -231,11 +233,180 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     },
   ];
 
+  // PC 사이드바 상세 메뉴
+  const desktopNavItems = [
+    {
+      href: '/',
+      label: '홈 대시보드',
+      desc: '통장 잔액 및 모임 요약',
+      icon: Home,
+      active: pathname === '/',
+    },
+    {
+      href: '/ledger',
+      label: '회비 & 장부 관리',
+      desc: '월별 납부 매트릭스 · 입출금 내역',
+      icon: Wallet,
+      active: pathname.startsWith('/ledger'),
+    },
+    {
+      href: '/schedule',
+      label: '일정표 & 모임 정산',
+      desc: '캘린더 · 참석 투표 · N분의1 정산',
+      icon: CalendarCheck,
+      active: pathname.startsWith('/schedule'),
+    },
+    {
+      href: '/polls',
+      label: '실시간 의사결정 투표',
+      desc: '모임 메뉴/일정 투표 및 미투표 현황',
+      icon: Vote,
+      active: pathname.startsWith('/polls'),
+    },
+    {
+      href: '/gallery',
+      label: '추억 사진 갤러리',
+      desc: '앨범별 사진첩 및 ZIP 다운로드',
+      icon: ImageIcon,
+      active: pathname.startsWith('/gallery'),
+    },
+    {
+      href: '/board',
+      label: '모임 회칙 & 게시판',
+      desc: '고정 회칙 안내 및 자유 소통',
+      icon: MessageSquareText,
+      active: pathname.startsWith('/board'),
+    },
+    {
+      href: '/settings',
+      label: '설정 & 데이터 백업',
+      desc: '멤버 관리 및 SQLite DB 백업',
+      icon: Settings,
+      active: pathname.startsWith('/settings'),
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-100 flex justify-center">
-      <div className="w-full max-w-xl min-h-screen bg-slate-50 shadow-xl flex flex-col relative pb-20 border-x border-slate-200/70">
-        {/* 상단 헤더 */}
-        <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200/80 px-4 py-3 flex items-center justify-between">
+    <div className="min-h-screen bg-slate-100 flex flex-col lg:flex-row">
+      {/* PC 웹 전용 좌측 고정 사이드바 (lg 이상에서 표시) */}
+      <aside className="hidden lg:flex lg:w-72 lg:flex-col lg:fixed lg:inset-y-0 bg-slate-900 text-white z-30 shadow-xl">
+        {/* 브랜드 헤더 */}
+        <div className="p-6 border-b border-white/10">
+          <Link href="/" className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-2xl bg-[#FEE500] text-slate-900 flex items-center justify-center font-black text-xl shadow-md">
+              ₩
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h1 className="font-extrabold text-white text-lg truncate">
+                  {setting.groupName}
+                </h1>
+              </div>
+              <p className="text-xs text-slate-400 truncate">Moim-Pocket 웹 대시보드</p>
+            </div>
+          </Link>
+
+          {/* 현재 접속 프로필 및 권한 카드 */}
+          <div className="mt-5 p-3.5 rounded-2xl bg-white/5 border border-white/10 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[11px] text-slate-400 block">현재 접속 멤버</span>
+                <span className="font-extrabold text-sm text-white">
+                  {currentMember.name}님
+                </span>
+              </div>
+              {isAdmin ? (
+                <span className="px-2 py-0.5 text-[11px] font-extrabold rounded-lg bg-[#FEE500] text-slate-900">
+                  총무 권한 ON
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 text-[11px] font-semibold rounded-lg bg-white/10 text-slate-300">
+                  일반 멤버
+                </span>
+              )}
+            </div>
+
+            <div className="flex gap-1.5 pt-1">
+              {isAdmin ? (
+                <button
+                  onClick={disableAdmin}
+                  className="flex-1 py-1.5 px-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-1"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>총무모드 해제</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowAdminModal(true)}
+                  className="flex-1 py-1.5 px-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition flex items-center justify-center gap-1"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5 text-[#FEE500]" />
+                  <span>총무 모드 전환</span>
+                </button>
+              )}
+
+              <button
+                onClick={logoutMember}
+                className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 transition"
+                title="다른 멤버로 프로필 변경"
+              >
+                <UserCheck className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* PC 사이드바 내비게이션 메뉴 */}
+        <nav className="flex-1 px-4 py-5 space-y-1.5 overflow-y-auto">
+          {desktopNavItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl transition ${
+                  item.active
+                    ? 'bg-[#FEE500] text-slate-900 font-extrabold shadow-md'
+                    : 'text-slate-300 hover:bg-white/5 hover:text-white font-medium'
+                }`}
+              >
+                <Icon
+                  className={`w-5 h-5 shrink-0 ${
+                    item.active ? 'text-slate-900 stroke-[2.5px]' : 'text-slate-400'
+                  }`}
+                />
+                <div className="min-w-0">
+                  <div className="text-sm leading-tight truncate">{item.label}</div>
+                  <div
+                    className={`text-[11px] mt-0.5 truncate ${
+                      item.active ? 'text-slate-800 font-semibold' : 'text-slate-500'
+                    }`}
+                  >
+                    {item.desc}
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* PC 사이드바 하단 정보 */}
+        <div className="p-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
+          <span>월 회비 ₩{Number(setting.monthlyFee || 0).toLocaleString()}</span>
+          <button
+            onClick={logoutAll}
+            className="inline-flex items-center gap-1 text-slate-400 hover:text-rose-400 transition"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>잠금</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* 우측(PC) / 전체(모바일) 메인 컨텐츠 래퍼 */}
+      <div className="flex-1 lg:pl-72 flex flex-col min-h-screen pb-20 lg:pb-8">
+        {/* 모바일 & 태블릿 상단 헤더 (lg 미만에서 표시) */}
+        <header className="lg:hidden sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200/80 px-4 sm:px-6 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-[#FEE500] text-slate-900 flex items-center justify-center font-black text-base shadow-sm">
               ₩
@@ -296,13 +467,40 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        {/* 본문 컨텐츠 */}
-        <main className="flex-1 px-4 py-4 space-y-4">{children}</main>
+        {/* PC 상단 유틸리티 바 (lg 이상에서 표시) */}
+        <header className="hidden lg:flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200/80 sticky top-0 z-20">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-extrabold text-slate-900">
+              {desktopNavItems.find((i) => i.active)?.label || '대시보드'}
+            </span>
+            <span className="text-xs text-slate-400">
+              {desktopNavItems.find((i) => i.active)?.desc}
+            </span>
+          </div>
 
-        {/* 하단 고정 내비게이션 탭 바 (5개 메뉴) */}
-        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-xl z-30 bg-white/95 backdrop-blur border-t border-slate-200 px-2 py-1.5">
-          <div className="grid grid-cols-5 gap-1">
-            {navItems.map((item) => {
+          <div className="flex items-center gap-3">
+            <div className="text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded-xl">
+              모임통장: <strong className="text-slate-800">{setting.bankAccount || '미등록'}</strong>
+            </div>
+            <button
+              onClick={logoutMember}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
+            >
+              <UserCheck className="w-3.5 h-3.5" />
+              <span>프로필 전환 ({currentMember.name})</span>
+            </button>
+          </div>
+        </header>
+
+        {/* 반응형 본문 컨테이너 (모바일은 패딩 컴팩트, PC는 최대 7xl 와이드 컨테이너) */}
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8 space-y-6">
+          {children}
+        </main>
+
+        {/* 모바일 전용 하단 고정 탭 바 (lg 미만에서만 표시) */}
+        <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-slate-200 px-2 py-1.5">
+          <div className="max-w-xl mx-auto grid grid-cols-5 gap-1">
+            {mobileNavItems.map((item) => {
               const Icon = item.icon;
               return (
                 <Link
@@ -321,66 +519,66 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </div>
         </nav>
+      </div>
 
-        {/* 총무 모드 PIN 입력 모달 */}
-        {showAdminModal && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-            <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-xl bg-[#FEE500] text-slate-900 flex items-center justify-center">
-                    <Sparkles className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-900 text-base">총무(관리자) 모드 전환</h3>
-                    <p className="text-xs text-slate-500">총무 전용 인증 코드를 입력하세요</p>
-                  </div>
+      {/* 총무 모드 PIN 입력 모달 */}
+      {showAdminModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-[#FEE500] text-slate-900 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5" />
                 </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">총무(관리자) 모드 전환</h3>
+                  <p className="text-xs text-slate-500">총무 전용 인증 코드를 입력하세요</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAdminModal(false);
+                  setAdminPinError('');
+                }}
+                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAdminSubmit} className="space-y-3">
+              <input
+                type="password"
+                inputMode="numeric"
+                value={adminPinInput}
+                onChange={(e) => setAdminPinInput(e.target.value)}
+                placeholder="총무 코드 입력 (기본: 9999)"
+                className="w-full px-4 py-3 text-center text-lg font-bold tracking-widest rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
+                autoFocus
+                required
+              />
+              {adminPinError && (
+                <p className="text-xs text-rose-600 font-medium text-center">{adminPinError}</p>
+              )}
+              <div className="flex gap-2">
                 <button
-                  onClick={() => {
-                    setShowAdminModal(false);
-                    setAdminPinError('');
-                  }}
-                  className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400"
+                  type="button"
+                  onClick={() => setShowAdminModal(false)}
+                  className="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-600 font-semibold text-sm"
                 >
-                  <X className="w-5 h-5" />
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 rounded-2xl bg-slate-900 text-[#FEE500] font-bold text-sm"
+                >
+                  총무 권한 활성화
                 </button>
               </div>
-
-              <form onSubmit={handleAdminSubmit} className="space-y-3">
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  value={adminPinInput}
-                  onChange={(e) => setAdminPinInput(e.target.value)}
-                  placeholder="총무 코드 입력 (기본: 9999)"
-                  className="w-full px-4 py-3 text-center text-lg font-bold tracking-widest rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
-                  autoFocus
-                  required
-                />
-                {adminPinError && (
-                  <p className="text-xs text-rose-600 font-medium text-center">{adminPinError}</p>
-                )}
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowAdminModal(false)}
-                    className="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-600 font-semibold text-sm"
-                  >
-                    취소
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 py-3 rounded-2xl bg-slate-900 text-[#FEE500] font-bold text-sm"
-                  >
-                    총무 권한 활성화
-                  </button>
-                </div>
-              </form>
-            </div>
+            </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -181,7 +181,7 @@ export default function PollsPage() {
       </div>
 
       {/* 투표 카드 리스트 */}
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
         {polls.map((poll) => {
           const totalVotes = poll.options.reduce(
             (sum: number, opt: any) => sum + opt.votes.length,

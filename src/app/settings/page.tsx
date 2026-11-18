@@ -173,8 +173,9 @@ export default function SettingsPage() {
         </div>
       )}
 
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
       {/* ① 모임 기본 정보 설정 */}
-      <section className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-3">
+      <section className="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs space-y-3">
         <h3 className="font-extrabold text-sm text-slate-900">모임 기본 정보 설정</h3>
         <form onSubmit={handleSaveSetting} className="space-y-3 text-xs">
           <div>
@@ -229,7 +230,7 @@ export default function SettingsPage() {
       </section>
 
       {/* ② 멤버 관리 (Soft Delete 지원) */}
-      <section className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-3">
+      <section className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs space-y-3">
         <div>
           <h3 className="font-extrabold text-sm text-slate-900">멤버 관리</h3>
           <p className="text-[11px] text-slate-400">
@@ -326,6 +327,7 @@ export default function SettingsPage() {
           ))}
         </div>
       </section>
+      </div>
 
       {/* ③ 데이터 백업 / 복원 (총무 전용) */}
       <section className="bg-slate-900 text-white rounded-2xl p-4 shadow-md space-y-3">

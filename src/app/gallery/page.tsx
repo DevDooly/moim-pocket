@@ -317,7 +317,7 @@ export default function GalleryPage() {
 
           {/* 사진 그리드 */}
           {photos.length > 0 ? (
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-3.5">
               {photos.map((photo: any, idx: number) => (
                 <div
                   key={photo.id}

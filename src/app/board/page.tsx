@@ -183,8 +183,9 @@ export default function BoardPage() {
         </Link>
       </div>
 
-      {/* 상단 고정 모임 회칙 영역 */}
-      <section className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 shadow-xs space-y-2.5">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
+      {/* 상단 고정 모임 회칙 영역 (PC에서는 좌측 5칸 고정 카드) */}
+      <section className="lg:col-span-5 lg:sticky lg:top-24 bg-amber-50/80 border border-amber-200 rounded-2xl p-4 sm:p-5 shadow-xs space-y-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-amber-950 font-extrabold text-sm">
             <BookOpen className="w-4 h-4 text-amber-600" />
@@ -225,17 +226,18 @@ export default function BoardPage() {
             </div>
           </div>
         ) : (
-          <div className="text-xs text-slate-700 whitespace-pre-line leading-relaxed bg-white/80 rounded-xl p-3 border border-amber-100">
+          <div className="text-xs sm:text-sm text-slate-700 whitespace-pre-line leading-relaxed bg-white/80 rounded-xl p-3.5 border border-amber-100">
             {rulesMarkdown || '등록된 모임 회칙이 없습니다.'}
           </div>
         )}
       </section>
 
+      <div className="lg:col-span-7 space-y-4">
       {/* 자유 게시판 헤더 */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-extrabold text-sm text-slate-900">공지 & 자유 게시판</h2>
-          <p className="text-[11px] text-slate-400">모임 소식과 이야기를 자유롭게 남겨보세요</p>
+          <h2 className="font-extrabold text-sm sm:text-base text-slate-900">공지 & 자유 게시판</h2>
+          <p className="text-[11px] sm:text-xs text-slate-400">모임 소식과 이야기를 자유롭게 남겨보세요</p>
         </div>
         <button
           onClick={() => setShowWriteModal(true)}
@@ -382,6 +384,8 @@ export default function BoardPage() {
             작성된 게시글이 없습니다.
           </div>
         )}
+      </div>
+      </div>
       </div>
 
       {/* 글쓰기 모달 */}

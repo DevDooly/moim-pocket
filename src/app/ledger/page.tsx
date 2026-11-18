@@ -307,19 +307,19 @@ export default function LedgerPage() {
       {/* 탭 1: 월별 회비 납부 매트릭스 */}
       {activeTab === 'matrix' && (
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs overflow-hidden">
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-6 shadow-xs overflow-hidden">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <div>
-                <h2 className="font-extrabold text-sm text-slate-900">
+                <h2 className="font-extrabold text-sm sm:text-base text-slate-900">
                   {year}년 월별 회비 납부 현황
                 </h2>
-                <p className="text-[11px] text-slate-400 mt-0.5">
+                <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
                   {isAdmin
-                    ? '총무 모드: 각 셀을 터치하면 [완납 → 미납 → 면제] 상태가 즉시 전환됩니다'
+                    ? '총무 모드: 각 셀을 클릭하면 [완납 → 미납 → 면제] 상태가 즉시 전환됩니다'
                     : '초록 체크: 완납 / 빨간 점: 미납 / 회색: 면제'}
                 </p>
               </div>
-              <div className="flex items-center gap-2 text-[11px] font-semibold">
+              <div className="flex items-center gap-3 text-xs font-semibold">
                 <span className="inline-flex items-center gap-1 text-emerald-700">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> 완납
                 </span>
@@ -333,14 +333,14 @@ export default function LedgerPage() {
             </div>
 
             <div className="overflow-x-auto -mx-4 px-4 pb-1">
-              <table className="w-full border-collapse text-xs min-w-[540px]">
+              <table className="w-full border-collapse text-xs sm:text-sm min-w-[560px]">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-500">
-                    <th className="py-2 pr-2 text-left font-bold sticky left-0 bg-white z-10">
+                    <th className="py-2.5 pr-3 text-left font-bold sticky left-0 bg-white z-10">
                       멤버
                     </th>
                     {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                      <th key={m} className="py-2 px-1 text-center font-bold">
+                      <th key={m} className="py-2.5 px-1.5 text-center font-bold">
                         {m}월
                       </th>
                     ))}
@@ -349,18 +349,18 @@ export default function LedgerPage() {
                 <tbody className="divide-y divide-slate-100">
                   {activeMembers.map((member) => (
                     <tr key={member.id} className="hover:bg-slate-50/70">
-                      <td className="py-2.5 pr-2 font-bold text-slate-900 sticky left-0 bg-white z-10 whitespace-nowrap">
+                      <td className="py-3 pr-3 font-bold text-slate-900 sticky left-0 bg-white z-10 whitespace-nowrap">
                         {member.name}
                       </td>
                       {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
                         const st = getDuesStatus(member.id, m);
                         return (
-                          <td key={m} className="py-2 px-1 text-center">
+                          <td key={m} className="py-2.5 px-1.5 text-center">
                             <button
                               type="button"
                               disabled={!isAdmin}
                               onClick={() => handleCellClick(member.id, m)}
-                              className={`w-7 h-7 rounded-lg inline-flex items-center justify-center transition ${
+                              className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl inline-flex items-center justify-center transition ${
                                 st === 'PAID'
                                   ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
                                   : st === 'EXEMPT'
@@ -372,11 +372,11 @@ export default function LedgerPage() {
                               }`}
                             >
                               {st === 'PAID' ? (
-                                <Check className="w-4 h-4 stroke-[3px]" />
+                                <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3px]" />
                               ) : st === 'EXEMPT' ? (
-                                <Minus className="w-3.5 h-3.5" />
+                                <Minus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               ) : (
-                                <X className="w-3.5 h-3.5" />
+                                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                               )}
                             </button>
                           </td>
