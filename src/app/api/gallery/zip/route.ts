@@ -3,7 +3,7 @@ import JSZip from 'jszip';
 import path from 'path';
 import fs from 'fs';
 import { prisma } from '@/lib/prisma';
-import { getUploadDir } from '@/lib/storage';
+import { resolvePhotoDiskPath } from '@/lib/storage';
 
 export async function GET(req: NextRequest) {
   try {
@@ -24,17 +24,18 @@ export async function GET(req: NextRequest) {
     }
 
     const zip = new JSZip();
-    const uploadDir = getUploadDir();
 
     for (let i = 0; i < album.photos.length; i++) {
       const photo = album.photos[i];
-      const fileName = path.basename(decodeURIComponent(photo.url));
-      const filePath = path.join(uploadDir, fileName);
+      const filePath = resolvePhotoDiskPath(photo.url);
+      const fileName = path.basename(filePath);
 
-      if (fs.existsSync(filePath)) {
+      if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
         const buffer = fs.readFileSync(filePath);
         const ext = path.extname(fileName) || '.jpg';
-        zip.file(`${String(i + 1).padStart(3, '0')}_${fileName.replace(/^[0-9]+-[a-z0-9]+-/, '') || `photo${ext}`}`, buffer);
+        const cleanName =
+          fileName.replace(/^[0-9]+-[a-z0-9]+-/, '') || `photo${ext}`;
+        zip.file(`${String(i + 1).padStart(3, '0')}_${cleanName}`, buffer);
       }
     }
 

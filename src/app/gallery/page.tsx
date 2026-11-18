@@ -138,6 +138,7 @@ export default function GalleryPage() {
     setUploadingPhotos(true);
     try {
       const formData = new FormData();
+      formData.append('albumTitle', currentAlbum.title);
       for (const rawFile of Array.from(fileList)) {
         const processed = await compressImageIfNeeded(rawFile);
         formData.append('files', processed);
@@ -243,6 +244,9 @@ export default function GalleryPage() {
           <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
             <div>
               <h3 className="font-extrabold text-base text-slate-900">{currentAlbum.title}</h3>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                앨범 폴더: <code>{galleryHostPath}/{currentAlbum.folderName || currentAlbum.title.replace(/\s+/g, '_')}</code>
+              </p>
               {currentAlbum.event && (
                 <p className="text-xs text-indigo-600 font-semibold mt-0.5 flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5" />

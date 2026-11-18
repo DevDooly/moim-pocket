@@ -27,6 +27,46 @@ export function getUploadDir(): string {
   return localDir;
 }
 
+export function sanitizeFolderName(name: string): string {
+  return (
+    name
+      .trim()
+      .replace(/[\/\\:*?"<>|]/g, '_')
+      .replace(/\s+/g, '_')
+      .slice(0, 80) || '기본_앨범'
+  );
+}
+
+export function getAlbumDir(albumTitle: string): {
+  folderName: string;
+  fullPath: string;
+} {
+  const folderName = sanitizeFolderName(albumTitle);
+  const fullPath = path.join(getUploadDir(), folderName);
+  if (!fs.existsSync(fullPath)) {
+    fs.mkdirSync(fullPath, { recursive: true });
+  }
+  return { folderName, fullPath };
+}
+
+export function resolvePhotoDiskPath(photoUrl: string): string {
+  const uploadDir = getUploadDir();
+  const decoded = decodeURIComponent(photoUrl);
+
+  // /api/uploads/<albumFolder>/<fileName>
+  if (decoded.startsWith('/api/uploads/')) {
+    const rel = decoded.replace(/^\/api\/uploads\//, '');
+    const safeSegments = rel
+      .split('/')
+      .filter((s) => s && s !== '.' && s !== '..');
+    return path.join(uploadDir, ...safeSegments);
+  }
+
+  // /api/files/<fileName>
+  const base = path.basename(decoded);
+  return path.join(uploadDir, base);
+}
+
 export function getSqliteDbPath(): string {
   const dbUrl = process.env.DATABASE_URL || 'file:/app/data/gyemoim.db';
   const rawPath = dbUrl.replace(/^file:/, '');

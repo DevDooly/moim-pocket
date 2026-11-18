@@ -21,14 +21,29 @@ export async function GET(
     const { filename } = await context.params;
     const decoded = decodeURIComponent(filename);
     const safeName = path.basename(decoded);
-    const filePath = path.join(getUploadDir(), safeName);
+    const uploadDir = getUploadDir();
+    let filePath = path.join(uploadDir, safeName);
 
+    // 루트에 없으면 앨범 하위 폴더에서 탐색
     if (!fs.existsSync(filePath)) {
+      const dirs = fs.readdirSync(uploadDir, { withFileTypes: true });
+      for (const d of dirs) {
+        if (d.isDirectory()) {
+          const candidate = path.join(uploadDir, d.name, safeName);
+          if (fs.existsSync(candidate)) {
+            filePath = candidate;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
       return new NextResponse('File Not Found', { status: 404 });
     }
 
     const fileBuffer = fs.readFileSync(filePath);
-    const ext = path.extname(safeName).toLowerCase();
+    const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_MAP[ext] || 'application/octet-stream';
 
     return new NextResponse(fileBuffer, {

@@ -19,15 +19,34 @@ export async function GET(
 ) {
   try {
     const { path: segments } = await context.params;
-    const targetName = path.basename(decodeURIComponent(segments.join('/')));
-    const filePath = path.join(getUploadDir(), targetName);
+    const safeSegments = segments
+      .map((s) => decodeURIComponent(s))
+      .filter((s) => s && s !== '.' && s !== '..' && !s.includes('/') && !s.includes('\\'));
 
-    if (!fs.existsSync(filePath)) {
+    const uploadDir = getUploadDir();
+    let filePath = path.join(uploadDir, ...safeSegments);
+
+    // 만약 루트에서 찾지 못했고 파일명만 전달된 경우 하위 앨범 폴더에서도 탐색
+    if (!fs.existsSync(filePath) && safeSegments.length === 1) {
+      const targetFile = safeSegments[0];
+      const dirs = fs.readdirSync(uploadDir, { withFileTypes: true });
+      for (const d of dirs) {
+        if (d.isDirectory()) {
+          const candidate = path.join(uploadDir, d.name, targetFile);
+          if (fs.existsSync(candidate)) {
+            filePath = candidate;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
       return new NextResponse('File Not Found', { status: 404 });
     }
 
     const fileBuffer = fs.readFileSync(filePath);
-    const ext = path.extname(targetName).toLowerCase();
+    const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_MAP[ext] || 'application/octet-stream';
 
     return new NextResponse(fileBuffer, {
@@ -38,7 +57,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Uploads alias serve error:', error);
+    console.error('Uploads serve error:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }
