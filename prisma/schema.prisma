@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Member {
+  id           String        @id @default(cuid())
+  name         String
+  role         String        @default("MEMBER") // "ADMIN" | "MEMBER"
+  isActive     Boolean       @default(true)
+  joinedAt     DateTime      @default(now())
+  transactions Transaction[]
+  duesRecords  DuesRecord[]
+  rsvps        EventRsvp[]
+  pollVotes    PollVote[]
+  posts        Post[]
+  comments     Comment[]
+  photos       Photo[]
+}
+
+model GroupSetting {
+  id            String @id @default("default")
+  groupName     String @default("우리계모임")
+  bankAccount   String @default("")
+  monthlyFee    Int    @default(30000)
+  rulesMarkdown String @default("모임 회칙을 작성해주세요.")
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  date        DateTime
+  type        String   // "INCOME" (입금) | "EXPENSE" (출금)
+  category    String   // "회비", "이자", "식비", "숙박", "경조사", "운영비", "기타"
+  amount      Int
+  description String
+  receiptUrl  String?
+  sourceType  String   @default("MANUAL") // 추후 확장용: "MANUAL" | "CSV" | "OCR"
+  uniqueHash  String?  @unique            // 추후 중복 업로드 방지용 해시
+  memberId    String?
+  member      Member?  @relation(fields: [memberId], references: [id])
+  eventId     String?
+  event       Event?   @relation(fields: [eventId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model DuesRecord {
+  id        String   @id @default(cuid())
+  year      Int
+  month     Int      // 1 ~ 12
+  status    String   // "PAID" | "UNPAID" | "EXEMPT"
+  amount    Int      @default(0)
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id])
+  updatedAt DateTime @updatedAt
+
+  @@unique([year, month, memberId])
+}
+
+model Event {
+  id           String        @id @default(cuid())
+  title        String
+  description  String?
+  location     String?
+  startAt      DateTime
+  endAt        DateTime?
+  rsvps        EventRsvp[]
+  transactions Transaction[]
+  albums       Album[]
+  createdAt    DateTime      @default(now())
+}
+
+model EventRsvp {
+  id       String @id @default(cuid())
+  status   String // "ATTEND" | "ABSENT" | "MAYBE"
+  eventId  String
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id])
+
+  @@unique([eventId, memberId])
+}
+
+model Poll {
+  id             String       @id @default(cuid())
+  title          String
+  allowMultiple  Boolean      @default(false)
+  allowAddOption Boolean      @default(true)
+  isClosed       Boolean      @default(false)
+  closesAt       DateTime?
+  options        PollOption[]
+  createdAt      DateTime     @default(now())
+}
+
+model PollOption {
+  id     String     @id @default(cuid())
+  text   String
+  pollId String
+  poll   Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes  PollVote[]
+}
+
+model PollVote {
+  id       String     @id @default(cuid())
+  optionId String
+  option   PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  memberId String
+  member   Member     @relation(fields: [memberId], references: [id])
+
+  @@unique([optionId, memberId])
+}
+
+model Album {
+  id        String   @id @default(cuid())
+  title     String
+  eventId   String?
+  event     Event?   @relation(fields: [eventId], references: [id])
+  photos    Photo[]
+  createdAt DateTime @default(now())
+}
+
+model Photo {
+  id         String   @id @default(cuid())
+  url        String
+  caption    String?
+  albumId    String
+  album      Album    @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  uploaderId String
+  uploader   Member   @relation(fields: [uploaderId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model Post {
+  id        String    @id @default(cuid())
+  title     String
+  content   String
+  isNotice  Boolean   @default(false)
+  imageUrl  String?
+  likes     Int       @default(0)
+  authorId  String
+  author    Member    @relation(fields: [authorId], references: [id])
+  comments  Comment[]
+  createdAt DateTime  @default(now())
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    Member   @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+}
