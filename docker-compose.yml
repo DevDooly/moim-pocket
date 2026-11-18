@@ -6,9 +6,12 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./data:/app/data  # SQLite DB 파일 및 업로드 이미지 영구 보관
+      - ./data:/app/data  # SQLite DB 파일 영구 보관
+      - ${GALLERY_HOST_PATH:-/media/rudy/moim-gallery}:/app/data/uploads  # 갤러리 이미지 저장 호스트 경로
     environment:
       - DATABASE_URL=file:/app/data/gyemoim.db
+      - UPLOAD_DIR=/app/data/uploads
+      - GALLERY_HOST_PATH=${GALLERY_HOST_PATH:-/media/rudy/moim-gallery}
       - GROUP_PIN=1234        # 일반 멤버 입장 코드
       - ADMIN_PIN=9999        # 총무(관리자) 모드 전환 코드
       - GROUP_NAME=우리계모임

@@ -20,6 +20,7 @@ export default function GalleryPage() {
   const [albums, setAlbums] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
+  const [galleryHostPath, setGalleryHostPath] = useState<string>('/media/rudy/moim-gallery');
   const [loading, setLoading] = useState(true);
 
   // 앨범 생성 모달
@@ -43,8 +44,10 @@ export default function GalleryPage() {
       const list = data.albums || [];
       setAlbums(list);
       setEvents(data.events || []);
+      if (data.galleryHostPath) setGalleryHostPath(data.galleryHostPath);
       if (list.length > 0 && !selectedAlbumId) {
-        setSelectedAlbumId(list[0].id);
+        const albumWithPhotos = list.find((a: any) => (a.photos?.length || 0) > 0);
+        setSelectedAlbumId((albumWithPhotos || list[0]).id);
       }
     } finally {
       setLoading(false);
@@ -183,20 +186,28 @@ export default function GalleryPage() {
   return (
     <div className="space-y-4">
       {/* 상단 헤더 & 앨범 생성 버튼 */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h2 className="font-extrabold text-sm text-slate-900">모임 추억 사진 갤러리</h2>
-          <p className="text-[11px] text-slate-400">
-            앨범별로 사진을 모아보고 ZIP으로 한 번에 내려받으세요
+          <h2 className="font-extrabold text-sm sm:text-base text-slate-900">모임 추억 사진 갤러리</h2>
+          <p className="text-[11px] sm:text-xs text-slate-500">
+            저장 경로: <code className="px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-800 font-bold">{galleryHostPath}</code> (폴더에 이미지를 넣으면 자동 연동됩니다)
           </p>
         </div>
-        <button
-          onClick={() => setShowAlbumModal(true)}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 text-[#FEE500] text-xs font-extrabold shadow-xs"
-        >
-          <FolderPlus className="w-4 h-4" />
-          <span>새 앨범 생성</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => fetchGallery()}
+            className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-xs"
+          >
+            <span>🔄 폴더 스캔 새로고침</span>
+          </button>
+          <button
+            onClick={() => setShowAlbumModal(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 text-[#FEE500] text-xs font-extrabold shadow-xs"
+          >
+            <FolderPlus className="w-4 h-4" />
+            <span>새 앨범 생성</span>
+          </button>
+        </div>
       </div>
 
       {/* 앨범 폴더 가로 스크롤 탭 */}

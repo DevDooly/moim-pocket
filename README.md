@@ -30,12 +30,20 @@
 ## 🚀 빠른 실행 방법 (Docker Compose 권장)
 
 ```bash
-# 1. 컨테이너 이미지 빌드 및 백그라운드 실행
+# 1. 기본 갤러리 저장 경로(/media/rudy/moim-gallery)로 컨테이너 빌드 및 실행
 docker compose up -d --build
 
-# 2. 실행 로그 확인 (DB 스키마 자동 push 및 초기 시드 데이터 생성 확인)
+# 2. (선택) 원하는 호스트 갤러리 폴더 경로를 직접 지정하여 실행할 때
+GALLERY_HOST_PATH=/media/rudy/my-custom-gallery docker compose up -d
+
+# 3. 실행 로그 확인 (DB 스키마 자동 push 및 초기 시드 데이터 생성 확인)
 docker logs -f gyemoim-dashboard
 ```
+
+> **💡 갤러리 폴더 자동 연동 안내:**
+> - 기본 갤러리 호스트 폴더는 **`/media/rudy/moim-gallery`** 이며, 컨테이너 내부의 `/app/data/uploads`와 마운트됩니다.
+> - 웹 UI에서 업로드한 사진이 해당 폴더에 저장될 뿐만 아니라, **리눅스 서버의 `/media/rudy/moim-gallery` 폴더에 직접 이미지 파일(`.jpg`, `.png`, `.webp`, `.svg` 등)을 넣으면 웹 갤러리(`/gallery`) 접속 시 자동으로 스캔되어 앨범에 표시**됩니다.
+> - 영구적으로 다른 경로를 사용하려면 `.env` 파일 또는 `docker-compose.yml`의 `GALLERY_HOST_PATH` 값을 변경하세요.
 
 브라우저에서 **`http://localhost:3000`** 으로 접속합니다.
 
