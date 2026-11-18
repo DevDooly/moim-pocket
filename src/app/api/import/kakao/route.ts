@@ -42,6 +42,7 @@ export async function GET() {
       imapHost: setting.imapHost || 'imap.naver.com',
       imapPort: setting.imapPort || 993,
       imapUser: setting.imapUser || '',
+      imapPass: setting.imapPass || '',
       hasImapPass: Boolean(setting.imapPass),
     });
   } catch (error) {

@@ -106,6 +106,19 @@ export default function LedgerPage() {
 
   const fetchKakaoImportConfig = useCallback(async () => {
     try {
+      // 로컬 스토리지에 최근 입력값이 있으면 우선 복원
+      const savedLocal = localStorage.getItem('gyemoim_imap_config');
+      if (savedLocal) {
+        try {
+          const parsedLocal = JSON.parse(savedLocal);
+          if (parsedLocal.excelPassword) setExcelPassword(parsedLocal.excelPassword);
+          if (parsedLocal.imapHost) setImapHost(parsedLocal.imapHost);
+          if (parsedLocal.imapPort) setImapPort(Number(parsedLocal.imapPort));
+          if (parsedLocal.imapUser) setImapUser(parsedLocal.imapUser);
+          if (parsedLocal.imapPass) setImapPass(parsedLocal.imapPass);
+        } catch {}
+      }
+
       const res = await fetch('/api/import/kakao', { cache: 'no-store' });
       if (!res.ok) return;
       const data = await res.json();
@@ -115,10 +128,27 @@ export default function LedgerPage() {
       if (data.imapHost) setImapHost(data.imapHost);
       if (data.imapPort) setImapPort(Number(data.imapPort));
       if (data.imapUser) setImapUser(data.imapUser);
+      if (data.imapPass) setImapPass(data.imapPass);
     } catch (e) {
       console.error(e);
     }
   }, []);
+
+  // 입력값 변경 시 로컬 스토리지에 즉시 자동 보존 (모달을 닫거나 새로고침해도 유지)
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        'gyemoim_imap_config',
+        JSON.stringify({
+          excelPassword,
+          imapHost,
+          imapPort,
+          imapUser,
+          imapPass,
+        })
+      );
+    } catch {}
+  }, [excelPassword, imapHost, imapPort, imapUser, imapPass]);
 
   useEffect(() => {
     fetchLedger(year);
@@ -977,8 +1007,9 @@ export default function LedgerPage() {
                       type="password"
                       value={imapPass}
                       onChange={(e) => setImapPass(e.target.value)}
-                      placeholder="비밀번호 입력 (저장 시 생략 가능)"
+                      placeholder="최근 사용한 비밀번호 자동 유지"
                       className="w-full px-3 py-2 rounded-xl border border-slate-200"
+                      required
                     />
                   </div>
                 </div>
