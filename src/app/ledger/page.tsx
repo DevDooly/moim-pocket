@@ -15,6 +15,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Upload,
+  Mail,
+  Sparkles,
+  CheckCircle2,
+  Webhook,
 } from 'lucide-react';
 import { useApp } from '@/components/AppContext';
 
@@ -29,7 +33,7 @@ const CATEGORIES = [
 ];
 
 export default function LedgerPage() {
-  const { isAdmin, setting } = useApp();
+  const { isAdmin, setting, refreshBootstrap } = useApp();
   const [activeTab, setActiveTab] = useState<'matrix' | 'transactions'>('matrix');
 
   const [year, setYear] = useState<number>(new Date().getFullYear());
@@ -66,6 +70,21 @@ export default function LedgerPage() {
   const [txReceiptUrl, setTxReceiptUrl] = useState<string>('');
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
 
+  // 카카오뱅크 엑셀 / 이메일 가져오기 모달 상태
+  const [showKakaoModal, setShowKakaoModal] = useState(false);
+  const [kakaoTab, setKakaoTab] = useState<'file' | 'imap' | 'webhook'>('file');
+  const [excelPassword, setExcelPassword] = useState('890803');
+  const [autoRegisterMembers, setAutoRegisterMembers] = useState(true);
+  const [hasSampleFile, setHasSampleFile] = useState(false);
+  const [sampleFileName, setSampleFileName] = useState<string | null>(null);
+  const [imapHost, setImapHost] = useState('imap.naver.com');
+  const [imapPort, setImapPort] = useState(993);
+  const [imapUser, setImapUser] = useState('');
+  const [imapPass, setImapPass] = useState('');
+  const [importingKakao, setImportingKakao] = useState(false);
+  const [importResult, setImportResult] = useState<any>(null);
+  const [importError, setImportError] = useState('');
+
   const fetchLedger = useCallback(async (targetYear: number) => {
     setLoading(true);
     try {
@@ -85,9 +104,26 @@ export default function LedgerPage() {
     }
   }, []);
 
+  const fetchKakaoImportConfig = useCallback(async () => {
+    try {
+      const res = await fetch('/api/import/kakao', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      setHasSampleFile(Boolean(data.hasSampleFile));
+      setSampleFileName(data.sampleFileName || null);
+      if (data.excelPassword) setExcelPassword(data.excelPassword);
+      if (data.imapHost) setImapHost(data.imapHost);
+      if (data.imapPort) setImapPort(Number(data.imapPort));
+      if (data.imapUser) setImapUser(data.imapUser);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
   useEffect(() => {
     fetchLedger(year);
-  }, [year, fetchLedger]);
+    fetchKakaoImportConfig();
+  }, [year, fetchLedger, fetchKakaoImportConfig]);
 
   const activeMembers = members.filter((m) => m.isActive);
 
@@ -228,6 +264,99 @@ export default function LedgerPage() {
     }
   };
 
+  // 카카오뱅크 엑셀 직접 업로드 핸들러
+  const handleKakaoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportingKakao(true);
+    setImportError('');
+    setImportResult(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('password', excelPassword);
+      formData.append('autoRegisterMembers', String(autoRegisterMembers));
+
+      const res = await fetch('/api/import/kakao', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setImportError(data.error || '파일 가져오기에 실패했습니다.');
+      } else {
+        setImportResult(data);
+        await fetchLedger(year);
+        await refreshBootstrap();
+      }
+    } finally {
+      setImportingKakao(false);
+      e.target.value = '';
+    }
+  };
+
+  // 서버 내 예시 파일 즉시 가져오기 핸들러
+  const handleImportSampleFile = async () => {
+    setImportingKakao(true);
+    setImportError('');
+    setImportResult(null);
+    try {
+      const res = await fetch('/api/import/kakao', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'sample',
+          password: excelPassword,
+          autoRegisterMembers,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setImportError(data.error || '예시 파일 가져오기에 실패했습니다.');
+      } else {
+        setImportResult(data);
+        await fetchLedger(year);
+        await refreshBootstrap();
+      }
+    } finally {
+      setImportingKakao(false);
+    }
+  };
+
+  // 이메일(IMAP)에서 최신 카카오뱅크 엑셀 가져오기 핸들러
+  const handleImportFromImap = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setImportingKakao(true);
+    setImportError('');
+    setImportResult(null);
+    try {
+      const res = await fetch('/api/import/kakao', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'imap',
+          password: excelPassword,
+          autoRegisterMembers,
+          imapHost,
+          imapPort,
+          imapUser,
+          imapPass,
+          saveConfig: true,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setImportError(data.error || '이메일 가져오기에 실패했습니다.');
+      } else {
+        setImportResult(data);
+        await fetchLedger(year);
+        await refreshBootstrap();
+      }
+    } finally {
+      setImportingKakao(false);
+    }
+  };
+
   const filteredTransactions = transactions.filter((tx) => {
     const d = new Date(tx.date);
     if (filterMonth !== 'ALL') {
@@ -247,9 +376,9 @@ export default function LedgerPage() {
 
   return (
     <div className="space-y-4">
-      {/* 상단 탭 전환 + 예약 UI 버튼 */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex bg-slate-200/80 p-1 rounded-2xl flex-1">
+      {/* 상단 탭 전환 + 카카오뱅크 엑셀/이메일 가져오기 버튼 */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex bg-slate-200/80 p-1 rounded-2xl flex-1 min-w-[240px]">
           <button
             onClick={() => setActiveTab('matrix')}
             className={`flex-1 py-2 text-xs font-extrabold rounded-xl transition ${
@@ -268,22 +397,21 @@ export default function LedgerPage() {
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            입출금 내역 장부
+            입출금 내역 장부 ({transactions.length})
           </button>
         </div>
 
         <button
           type="button"
-          onClick={() =>
-            alert(
-              '카카오뱅크 거래내역 CSV 업로드 및 캡처 이미지 OCR 자동 파싱 기능은 추후 업데이트 예정입니다. (현재 DB에 sourceType 및 uniqueHash 스키마가 준비되어 있습니다.)'
-            )
-          }
-          className="inline-flex items-center gap-1 px-2.5 py-2 rounded-2xl border border-dashed border-slate-300 bg-white text-[11px] font-semibold text-slate-400 hover:text-slate-600 shrink-0"
-          title="향후 확장 기능 (CSV/OCR)"
+          onClick={() => {
+            setImportError('');
+            setImportResult(null);
+            setShowKakaoModal(true);
+          }}
+          className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-[#FEE500] hover:bg-yellow-300 text-slate-900 text-xs font-extrabold shadow-xs transition shrink-0"
         >
-          <FileSpreadsheet className="w-3.5 h-3.5" />
-          <span>엑셀/캡처 (준비중)</span>
+          <FileSpreadsheet className="w-4 h-4" />
+          <span>카카오뱅크 엑셀 / 이메일 가져오기</span>
         </button>
       </div>
 
@@ -391,7 +519,7 @@ export default function LedgerPage() {
 
           {/* [총무 전용] 빠른 일괄 납부 처리 위젯 */}
           {isAdmin && (
-            <div className="bg-slate-900 text-white rounded-2xl p-4 space-y-3 shadow-md">
+            <div className="bg-slate-900 text-white rounded-2xl p-4 sm:p-5 space-y-3 shadow-md">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CheckSquare className="w-4 h-4 text-[#FEE500]" />
@@ -493,7 +621,7 @@ export default function LedgerPage() {
       {activeTab === 'transactions' && (
         <div className="space-y-3">
           {/* 필터 및 검색 바 */}
-          <div className="bg-white rounded-2xl p-3 border border-slate-200/80 space-y-2.5">
+          <div className="bg-white rounded-2xl p-3 sm:p-4 border border-slate-200/80 space-y-2.5">
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -511,7 +639,7 @@ export default function LedgerPage() {
                   className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-900 text-[#FEE500] text-xs font-extrabold shrink-0"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>내역 등록</span>
+                  <span>수기 내역 등록</span>
                 </button>
               )}
             </div>
@@ -565,6 +693,11 @@ export default function LedgerPage() {
                       >
                         {tx.category}
                       </span>
+                      {tx.sourceType === 'CSV' && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#FEE500]/50 text-slate-900">
+                          카카오뱅크엑셀
+                        </span>
+                      )}
                       <span className="font-bold text-sm text-slate-900 truncate">
                         {tx.description}
                       </span>
@@ -581,7 +714,7 @@ export default function LedgerPage() {
                     </div>
 
                     <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
-                      <span>{new Date(tx.date).toLocaleDateString('ko-KR')}</span>
+                      <span>{new Date(tx.date).toLocaleString('ko-KR')}</span>
                       {tx.member && <span>· 관련 멤버: {tx.member.name}</span>}
                       {tx.event && (
                         <span className="text-indigo-600 font-semibold">
@@ -593,7 +726,7 @@ export default function LedgerPage() {
 
                   <div className="text-right shrink-0">
                     <div
-                      className={`font-black text-sm ${
+                      className={`font-black text-sm sm:text-base ${
                         isIncome ? 'text-sky-600' : 'text-rose-600'
                       }`}
                     >
@@ -625,6 +758,297 @@ export default function LedgerPage() {
             {filteredTransactions.length === 0 && (
               <div className="py-10 text-center text-xs text-slate-400">
                 조건에 맞는 입출금 내역이 없습니다.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 카카오뱅크 엑셀 / 이메일 자동 가져오기 모달 */}
+      {showKakaoModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 my-8">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-[#FEE500] text-slate-900 flex items-center justify-center font-black">
+                  <FileSpreadsheet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-slate-900">
+                    카카오뱅크 거래내역 엑셀 & 이메일 연동
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    암호 걸린 엑셀(.xlsx) 자동 복호화 · 중복 방지 · 멤버/회비 자동 매칭
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowKakaoModal(false)}
+                className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* 3가지 연동 방식 탭 */}
+            <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-2xl text-xs font-extrabold">
+              <button
+                type="button"
+                onClick={() => setKakaoTab('file')}
+                className={`py-2 rounded-xl transition ${
+                  kakaoTab === 'file' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
+                }`}
+              >
+                📁 엑셀 파일 업로드
+              </button>
+              <button
+                type="button"
+                onClick={() => setKakaoTab('imap')}
+                className={`py-2 rounded-xl transition ${
+                  kakaoTab === 'imap' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
+                }`}
+              >
+                📧 이메일 자동수신
+              </button>
+              <button
+                type="button"
+                onClick={() => setKakaoTab('webhook')}
+                className={`py-2 rounded-xl transition ${
+                  kakaoTab === 'webhook' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500'
+                }`}
+              >
+                🔗 서버 웹훅 API
+              </button>
+            </div>
+
+            {/* 공통 옵션: 엑셀 비밀번호 + 신규 멤버 자동 등록 */}
+            <div className="bg-slate-50 rounded-2xl p-3.5 space-y-2.5 border border-slate-200/70 text-xs">
+              <div className="flex items-center justify-between gap-3">
+                <label className="font-bold text-slate-700 shrink-0">
+                  카카오뱅크 엑셀 비밀번호 (생년월일 6자리)
+                </label>
+                <input
+                  type="text"
+                  value={excelPassword}
+                  onChange={(e) => setExcelPassword(e.target.value)}
+                  placeholder="예: 890803"
+                  className="w-36 px-3 py-1.5 rounded-xl border border-slate-300 bg-white font-extrabold text-center tracking-widest text-slate-900"
+                />
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer pt-1 border-t border-slate-200/60">
+                <input
+                  type="checkbox"
+                  checked={autoRegisterMembers}
+                  onChange={(e) => setAutoRegisterMembers(e.target.checked)}
+                  className="rounded text-slate-900"
+                />
+                <span className="text-slate-600 font-medium">
+                  거래내역의 입금/이체자 실명(예: 김선홍, 정진우 등)을 멤버로 자동 등록 및 당월 회비 완납 처리
+                </span>
+              </label>
+            </div>
+
+            {/* 탭 1: 엑셀 파일 업로드 & 서버 샘플 파일 즉시 실행 */}
+            {kakaoTab === 'file' && (
+              <div className="space-y-3 text-xs">
+                <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 hover:border-slate-900 rounded-2xl p-6 bg-slate-50/50 hover:bg-amber-50/30 transition cursor-pointer text-center">
+                  <Upload className="w-7 h-7 text-slate-400 mb-2" />
+                  <span className="font-extrabold text-sm text-slate-800">
+                    {importingKakao
+                      ? '엑셀 암호 해제 및 거래내역 분석 중...'
+                      : '클릭하여 카카오뱅크 엑셀(.xlsx / .csv) 파일 선택'}
+                  </span>
+                  <span className="text-[11px] text-slate-400 mt-1">
+                    이메일로 받은 원본 암호화 엑셀 파일을 그대로 업로드하면 서버가 비밀번호({excelPassword})로 자동 복호화합니다
+                  </span>
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls,.csv"
+                    onChange={handleKakaoFileUpload}
+                    className="hidden"
+                    disabled={importingKakao}
+                  />
+                </label>
+
+                {hasSampleFile && (
+                  <div className="rounded-2xl bg-slate-900 text-white p-4 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1.5 text-[#FEE500] font-extrabold text-xs">
+                        <Sparkles className="w-4 h-4" />
+                        프로젝트 폴더 내 예시 엑셀 파일 감지됨!
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-white/10 text-slate-300">
+                        비밀번호: {excelPassword}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 break-all">{sampleFileName}</p>
+                    <button
+                      type="button"
+                      disabled={importingKakao}
+                      onClick={handleImportSampleFile}
+                      className="w-full py-2.5 rounded-xl bg-[#FEE500] hover:bg-yellow-300 text-slate-900 font-extrabold text-xs transition"
+                    >
+                      {importingKakao
+                        ? '가져오는 중...'
+                        : '⚡ 서버의 예시 엑셀 파일 즉시 복호화 & 장부 반영하기'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 탭 2: 이메일(IMAP) 자동 수신 연동 */}
+            {kakaoTab === 'imap' && (
+              <form onSubmit={handleImportFromImap} className="space-y-3 text-xs">
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImapHost('imap.naver.com');
+                      setImapPort(993);
+                    }}
+                    className={`flex-1 py-1.5 rounded-xl font-bold border ${
+                      imapHost === 'imap.naver.com'
+                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        : 'bg-white text-slate-600 border-slate-200'
+                    }`}
+                  >
+                    네이버 메일 (imap.naver.com)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImapHost('imap.gmail.com');
+                      setImapPort(993);
+                    }}
+                    className={`flex-1 py-1.5 rounded-xl font-bold border ${
+                      imapHost === 'imap.gmail.com'
+                        ? 'bg-sky-600 text-white border-sky-600'
+                        : 'bg-white text-slate-600 border-slate-200'
+                    }`}
+                  >
+                    Gmail (imap.gmail.com)
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2">
+                    <label className="block font-bold text-slate-600 mb-1">IMAP 서버 주소</label>
+                    <input
+                      type="text"
+                      value={imapHost}
+                      onChange={(e) => setImapHost(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-600 mb-1">포트 (SSL)</label>
+                    <input
+                      type="number"
+                      value={imapPort}
+                      onChange={(e) => setImapPort(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="block font-bold text-slate-600 mb-1">
+                      수신 이메일 계정 (카카오뱅크에서 보낸 곳)
+                    </label>
+                    <input
+                      type="text"
+                      value={imapUser}
+                      onChange={(e) => setImapUser(e.target.value)}
+                      placeholder="예: myid@naver.com"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-600 mb-1">
+                      이메일 비밀번호 (또는 앱 비밀번호)
+                    </label>
+                    <input
+                      type="password"
+                      value={imapPass}
+                      onChange={(e) => setImapPass(e.target.value)}
+                      placeholder="비밀번호 입력 (저장 시 생략 가능)"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={importingKakao}
+                  className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-[#FEE500] font-extrabold inline-flex items-center justify-center gap-1.5"
+                >
+                  <Mail className="w-4 h-4" />
+                  <span>
+                    {importingKakao
+                      ? '메일함 접속 및 첨부 엑셀 복호화 중...'
+                      : '메일함에서 최신 카카오뱅크 엑셀 자동 가져오기'}
+                  </span>
+                </button>
+              </form>
+            )}
+
+            {/* 탭 3: 외부 메일 포워딩 웹훅 안내 */}
+            {kakaoTab === 'webhook' && (
+              <div className="space-y-2.5 text-xs bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <div className="flex items-center gap-1.5 font-extrabold text-slate-900">
+                  <Webhook className="w-4 h-4 text-indigo-600" />
+                  <span>서버 직접 수신 API (`POST /api/import/kakao`)</span>
+                </div>
+                <p className="text-slate-600 leading-relaxed">
+                  Cloudflare Email Routing, Make, n8n, 또는 모바일 자동화에서 카카오뱅크 이메일 첨부파일을 서버로 바로 쏘면 즉시 복호화 및 장부 반영이 수행됩니다.
+                </p>
+                <pre className="bg-slate-900 text-slate-100 p-3 rounded-xl overflow-x-auto text-[11px]">
+{`curl -X POST http://서버주소:3000/api/import/kakao \\
+  -F "file=@카카오뱅크_거래내역.xlsx" \\
+  -F "password=${excelPassword}"`}
+                </pre>
+              </div>
+            )}
+
+            {/* 에러 및 성공 결과 배너 */}
+            {importError && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700">
+                ⚠️ {importError}
+              </div>
+            )}
+
+            {importResult && (
+              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs space-y-1.5 text-emerald-950">
+                <div className="flex items-center gap-1.5 font-extrabold text-sm text-emerald-800">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>카카오뱅크 거래내역 가져오기 완료!</span>
+                </div>
+                <p>
+                  · <strong>예금주/계좌:</strong> {importResult.accountHolder} (
+                  {importResult.accountNumber})
+                </p>
+                <p>
+                  · <strong>조회 기간:</strong> {importResult.period}
+                </p>
+                <p>
+                  · <strong>반영 결과:</strong> 총 {importResult.totalParsed}건 중{' '}
+                  <strong className="text-emerald-700 underline">
+                    신규 {importResult.insertedCount}건 장부 등록
+                  </strong>{' '}
+                  (중복/0원 제외: {importResult.skippedCount}건)
+                </p>
+                {importResult.newlyRegisteredMembers?.length > 0 && (
+                  <p>
+                    · <strong>자동 등록된 멤버:</strong>{' '}
+                    {importResult.newlyRegisteredMembers.join(', ')}
+                  </p>
+                )}
               </div>
             )}
           </div>

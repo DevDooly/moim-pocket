@@ -28,6 +28,11 @@ model GroupSetting {
   bankAccount   String @default("")
   monthlyFee    Int    @default(30000)
   rulesMarkdown String @default("모임 회칙을 작성해주세요.")
+  excelPassword String @default("890803")
+  imapHost      String @default("imap.naver.com")
+  imapPort      Int    @default(993)
+  imapUser      String @default("")
+  imapPass      String @default("")
 }
 
 model Transaction {
